@@ -3,46 +3,55 @@ package org.fasttrack.service;
 import org.fasttrack.exception.EntityNotFoundException;
 import org.fasttrack.model.Country;
 import org.fasttrack.repository.CountryReader;
+import org.fasttrack.repository.CountryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class CountryService {
     private CountryReader countryReader;
-    private List<Country> countries;
+    private CountryRepository repository;
 
     @Autowired
-    public CountryService(CountryReader countryReader) {
+    public CountryService(CountryReader countryReader, CountryRepository repository) {
+        this.repository = repository;
         this.countryReader = countryReader;
-        countries = countryReader.getAllCountries();
+        repository.saveAll(countryReader.getAllCountries());
     }
 
     public List<Country> getAllCountries() {
-        return countries;
-    }
-
-    public void load() {
+        return repository.findAll();
     }
 
     public List<Country> getAllCountriesByContinent(String continentName) {
-        return countries.stream().filter(country -> country.getContinent().equals(continentName)).collect(Collectors.toList());
+        return repository.findAllByContinent(continentName);
+//        return getAllCountries().stream().filter(country -> country.getContinent().equals(continentName)).collect(Collectors.toList());
     }
 
     public List<Country> getAllCountriesByContinentAndPopulation(String continentName, Integer minPopulation) {
-        int finalMinPopulation = minPopulation == null ? 0 : minPopulation;
-        return getAllCountriesByContinent(continentName).stream().filter(c -> c.getPopulation() >= finalMinPopulation).collect(Collectors.toList());
-
+        minPopulation = minPopulation == null ? 0 : minPopulation;
+        return repository.findByContinentAndMinPopulation(continentName, minPopulation);
     }
 
     public Country addCountry(Country country) {
-        countries.add(country);
-        return country;
+        return repository.save(country);
     }
 
     public Country getCountryById(int countryId) {
-        return countries.stream().filter(c -> c.getId() == countryId).findFirst().orElseThrow(() -> new EntityNotFoundException("Nu a fost gasita tara cu id-ul " + countryId, countryId));
+        Optional<Country> foundCountry = repository.findById(countryId);
+        if (foundCountry.isPresent()) {
+            return foundCountry.get();
+        } else {
+            throw new EntityNotFoundException("Nu a fost gasita tara cu id-ul " + countryId, countryId);
+        }
+    }
+
+    public String removeCountry(int countryId) {
+        repository.deleteById(countryId);
+        return "Sters cu succes";
     }
 }

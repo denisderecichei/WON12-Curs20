@@ -32,6 +32,11 @@ public class CountryController {
         return service.addCountry(country);
     }
 
+    @DeleteMapping("{countryId}")
+    public String removeCountry(@PathVariable int countryId) {
+        return service.removeCountry(countryId);
+    }
+
     @GetMapping("{continentName}/countries")
     public List<Country> getCountriesByContinentAndMinPopulation(@PathVariable(name = "continentName") String continentName,
                                                                  @RequestParam(name = "minPopulation", required = false) Integer minPopulation) {

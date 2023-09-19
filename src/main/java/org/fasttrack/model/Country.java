@@ -1,9 +1,14 @@
 package org.fasttrack.model;
 
+import jakarta.persistence.*;
+
 import java.util.List;
 
+@Entity
+@Table(name = "countries")
 public class Country {
-    private static int idCounter = 1;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String name;
     private String capital;
@@ -13,7 +18,6 @@ public class Country {
     private List<String> neighbours;
 
     public Country(String name, String capital, int population, int area, String continent, List<String> neighbours) {
-        this.id = idCounter++;
         this.name = name;
         this.capital = capital;
         this.population = population;
@@ -71,14 +75,6 @@ public class Country {
 
     public void setNeighbours(List<String> neighbours) {
         this.neighbours = neighbours;
-    }
-
-    public static int getIdCounter() {
-        return idCounter;
-    }
-
-    public static void setIdCounter(int idCounter) {
-        Country.idCounter = idCounter;
     }
 
     public int getId() {
