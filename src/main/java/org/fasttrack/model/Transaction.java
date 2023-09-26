@@ -1,6 +1,12 @@
 package org.fasttrack.model;
 
+import jakarta.persistence.*;
+
+@Entity
+//@Table(name = "transactions")
 public class Transaction {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String product;
     private TransactionType type;
@@ -11,6 +17,15 @@ public class Transaction {
         this.product = product;
         this.type = type;
         this.amount = amount;
+    }
+
+    public Transaction(String product, TransactionType type, double amount) {
+        this.product = product;
+        this.type = type;
+        this.amount = amount;
+    }
+
+    public Transaction() {
     }
 
     public int getId() {

@@ -3,29 +3,57 @@ package org.fasttrack.service;
 import org.fasttrack.exception.EntityNotFoundException;
 import org.fasttrack.model.Transaction;
 import org.fasttrack.model.TransactionType;
+import org.fasttrack.repository.TransactionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class TransactionService {
-    private List<Transaction> transactions;
+    private TransactionRepository transactionRepository;
 
-    TransactionService() {
-        this.transactions = generateTransactions();
+    @Autowired
+    TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
     }
 
-    public List<Transaction> getAllTransactions(String product, TransactionType type, Double minAmount, Double maxAmount) {
-        return transactions.stream()
-                .filter(t -> product == null || t.getProduct().equals(product))
-                .filter(t -> type == null || t.getType().equals(type))
-                .filter(t -> minAmount == null || t.getAmount() > minAmount)
-                .filter(t -> maxAmount == null || t.getAmount() < maxAmount)
-                .collect(Collectors.toList());
+    public List<Transaction> getAllTransactions(TransactionType type, Double minAmount, Double maxAmount) {
+        //A B C A=type B=min C=max
+        //[], A, B, C, AB, AC, BC, ABC
+        if (type != null) {
+            if (minAmount != null) {
+                if (maxAmount != null) {
+                    return transactionRepository.findByTypeAndAmountBetween(type, minAmount, maxAmount);
+                } else {
+                    return transactionRepository.findByTypeAndAmountGreaterThanEqual(type, minAmount);
+                }
+            } else {
+                if (maxAmount != null) {
+                    return transactionRepository.findByTypeAndAmountLessThanEqual(type, maxAmount);
+                } else {
+                    return transactionRepository.findByType(type);
+                }
+            }
+        } else {
+            if (minAmount != null) {
+                if (maxAmount != null) {
+                    return transactionRepository.findByAmountBetween(minAmount, maxAmount);
+                } else {
+                    return transactionRepository.findByAmountGreaterThanEqual(minAmount);
+                }
+            } else {
+                if (maxAmount != null) {
+                    return transactionRepository.findByAmountLessThanEqual(maxAmount);
+                } else {
+                    return transactionRepository.findAll();
+                }
+            }
+        }
     }
 
     private static List<Transaction> generateTransactions() {
@@ -40,51 +68,52 @@ public class TransactionService {
     }
 
     public Transaction getTransactionById(int id) {
-        return transactions.stream()
-                .filter(t -> t.getId() == id)
-                .findFirst()
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Nu am putut gasi tranzactie cu idul " + id, id));
+        Optional<Transaction> foundTransaction = transactionRepository.findById(id);
+        if (foundTransaction.isPresent()) {
+            return foundTransaction.get();
+        } else {
+            throw new EntityNotFoundException("", id);
+        }
     }
 
     public Transaction addTransaction(Transaction transaction) {
-        transactions.add(transaction);
-        return transaction;
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        return savedTransaction;
     }
 
-    public Transaction putTransaction(Transaction transaction) {
-        for (Transaction currentTrans : transactions) {
-            if (currentTrans.getId() == transaction.getId()) {
-                transactions.remove(currentTrans);
-                break;
+    public Transaction putTransaction(Transaction fromAPICall) {
+        Transaction endResult;
+        Optional<Transaction> foundTransaction = transactionRepository.findById(fromAPICall.getId());
+        if (foundTransaction.isPresent()) {
+            Transaction fromDb = foundTransaction.get();
+            if (fromAPICall.getProduct() != null) {
+                fromDb.setProduct(fromAPICall.getProduct());
             }
+            if (fromAPICall.getType() != null) {
+                fromDb.setType(fromAPICall.getType());
+            }
+            if (fromAPICall.getAmount() != 0) {
+                fromDb.setAmount(fromAPICall.getAmount());
+            }
+            endResult = transactionRepository.save(fromDb);
+        } else {
+            endResult = transactionRepository.save(fromAPICall);
         }
-        transactions.add(transaction);
-        return transaction;
+        return endResult;
     }
 
     public String deleteTransaction(int id) {
-        boolean wasDeleted = false;
-        for (Transaction currentTrans : transactions) {
-            if (currentTrans.getId() == id) {
-                wasDeleted = transactions.remove(currentTrans);
-                break;
-            }
-        }
-        if (wasDeleted) {
-            return String.format("Am sters transactia %d cu success", id);
-        } else {
-            return String.format("Nu am putut sterge transactia %d cu success", id);
-        }
+        transactionRepository.deleteById(id);
+        return String.format("Am sters transactia %d cu success", id);
     }
 
     public Map<TransactionType, List<Transaction>> getReportsByType() {
-        return transactions.stream()
+        return transactionRepository.findAll().stream()
                 .collect(Collectors.groupingBy(Transaction::getType));
     }
 
     public Map<String, List<Transaction>> getReportsByProduct() {
-        return transactions.stream()
+        return transactionRepository.findAll().stream()
                 .collect(Collectors.groupingBy(Transaction::getProduct));
     }
 }

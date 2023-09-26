@@ -20,8 +20,11 @@ public class TransactionController {
     }
 
     @GetMapping
-    public List<Transaction> getAllTransactionFiltered(@RequestParam(required = false) String product, @RequestParam(required = false) TransactionType type, @RequestParam(required = false) Double minAmount, @RequestParam(required = false) Double maxAmount) {
-        return service.getAllTransactions(product, type, minAmount, maxAmount);
+    public List<Transaction> getAllTransactionFiltered(
+            @RequestParam(required = false) TransactionType type,
+           @RequestParam(required = false) Double minAmount,
+           @RequestParam(required = false) Double maxAmount) {
+        return service.getAllTransactions(type, minAmount, maxAmount);
     }
 
     @GetMapping("{id}")
