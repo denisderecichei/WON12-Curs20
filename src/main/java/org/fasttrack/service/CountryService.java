@@ -1,6 +1,7 @@
 package org.fasttrack.service;
 
 import org.fasttrack.exception.EntityNotFoundException;
+import org.fasttrack.model.City;
 import org.fasttrack.model.Country;
 import org.fasttrack.repository.CountryReader;
 import org.fasttrack.repository.CountryRepository;
@@ -13,14 +14,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class CountryService {
-    private CountryReader countryReader;
     private CountryRepository repository;
 
     @Autowired
-    public CountryService(CountryReader countryReader, CountryRepository repository) {
+    public CountryService(CountryRepository repository) {
         this.repository = repository;
-        this.countryReader = countryReader;
-        repository.saveAll(countryReader.getAllCountries());
     }
 
     public List<Country> getAllCountries() {
@@ -53,5 +51,17 @@ public class CountryService {
     public String removeCountry(int countryId) {
         repository.deleteById(countryId);
         return "Sters cu succes";
+    }
+
+    public Country addCityToCountry(int countryId, City city) {
+        Optional<Country> foundCountry = repository.findById(countryId);
+        if (foundCountry.isEmpty()) {
+            throw new EntityNotFoundException("Nu a fost gasita tara cu id-ul " + countryId, countryId);
+        } else {
+            Country myCountry = foundCountry.get();
+            city.setBelongingCountry(myCountry);
+            myCountry.addCity(city);
+            return repository.save(myCountry);
+        }
     }
 }

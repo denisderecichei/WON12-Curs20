@@ -1,5 +1,6 @@
 package org.fasttrack.controller;
 
+import org.fasttrack.model.City;
 import org.fasttrack.model.Country;
 import org.fasttrack.service.CountryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,12 @@ public class CountryController {
     @PostMapping
     public Country addCountry(@RequestBody Country country) {
         return service.addCountry(country);
+    }
+
+    @PostMapping("{countryId}")
+    public Country addCityToCountry(@PathVariable int countryId,
+                                    @RequestBody City city) {
+        return service.addCityToCountry(countryId, city);
     }
 
     @DeleteMapping("{countryId}")
